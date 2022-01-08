@@ -35,3 +35,9 @@ $(SHARED_LIB): $(OBJS)
 
 clean:
 	-rm $(OBJS) libvcv.so
+
+example.prepare:
+	cd examples/ && ln -s ../ cv
+
+example.clean:
+	rm examples/cv
