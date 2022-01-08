@@ -9,3 +9,8 @@ count.out
 /build
 .idea/
 contrib/data.yaml
+
+/out/
+/examples/cv
+/libvcv.so
+
