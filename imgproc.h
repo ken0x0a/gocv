@@ -16,6 +16,7 @@ typedef void* CLAHE;
 
 #include "core.h"
 
+Mat crop(Mat src, int top, int bottom, int left, int right);
 double ArcLength(PointVector curve, bool is_closed);
 PointVector ApproxPolyDP(PointVector curve, double epsilon, bool closed);
 void CvtColor(Mat src, Mat dst, int code);
@@ -30,7 +31,7 @@ void Blur(Mat src, Mat dst, Size ps);
 void BoxFilter(Mat src, Mat dst, int ddepth, Size ps);
 void SqBoxFilter(Mat src, Mat dst, int ddepth, Size ps);
 void Dilate(Mat src, Mat dst, Mat kernel);
-void DilateWithParams(Mat src, Mat dst, Mat kernel, Point anchor, int iterations, int borderType, Scalar borderValue);
+void DilateWithParams(Mat src, Mat dst, Mat kernel, Point anchor, int iterations, int borderType, Scalar* borderValue);
 void DistanceTransform(Mat src, Mat dst, Mat labels, int distanceType, int maskSize, int labelType);
 void Erode(Mat src, Mat dst, Mat kernel);
 void ErodeWithParams(Mat src, Mat dst, Mat kernel, Point anchor, int iterations, int borderType);
