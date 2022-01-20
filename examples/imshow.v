@@ -3,15 +3,21 @@ module main
 import cv
 
 fn main() {
-	mat := cv.new_mat()
+	mut mat := cv.new_mat()
 	dump(mat)
 	dump(mat.rows())
 	dump(mat.cols())
 	dump(mat.channels())
 	dump(mat.step())
 	mut win := cv.new_window('Hello')
-	defer { win.close() }
-	mt := cv.imread('./images/toy.jpg', .color)
+	defer {
+		win.close()
+	}
+	mut mt := cv.imread('./images/toy.jpg', .color)
+	defer {
+		mat.close()
+		mt.close()
+	}
 	dump(mt)
 	dump(mt.rows())
 	dump(mt.cols())
@@ -35,4 +41,3 @@ fn main() {
 // fn to_go_bytes(b C.ByteArray) []byte {
 // 	return C.GoBytes(unsafe.Pointer(b.data), b.length)
 // }
-

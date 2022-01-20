@@ -3,6 +3,7 @@ module cv
 #include "imgcodecs.h"
 
 fn C.Image_IMRead(&char, int) &C.Mat
+fn C.Image_IMWrite(&char, &C.Mat) bool
 
 // IMReadFlag is one of the valid flags to use for the IMRead function.
 pub enum IMReadFlag {
@@ -132,3 +133,108 @@ pub enum IMWriteMode {
 pub fn imread(name string, flags IMReadFlag) Mat {
 	return new_mat_from_c(C.Image_IMRead(unsafe { &char(name.str) }, int(flags)))
 }
+
+// IMWrite writes a Mat to an image file.
+//
+// For further details, please see:
+// http://docs.opencv.org/master/d4/da8/group__imgcodecs.html#gabbc7ef1aa2edfaa87772f1202d67e0ce
+//
+pub fn imwrite(name string, img Mat) bool {
+	return C.Image_IMWrite(unsafe { &char(name.str) }, img.p)
+}
+
+// // IMWriteWithParams writes a Mat to an image file. With that func you can
+// // pass compression parameters.
+// //
+// // For further details, please see:
+// // http://docs.opencv.org/master/d4/da8/group__imgcodecs.html#gabbc7ef1aa2edfaa87772f1202d67e0ce
+// //
+// func IMWriteWithParams(name string, img Mat, params []int) bool {
+// 	cName := C.CString(name)
+// 	defer C.free(unsafe.Pointer(cName))
+
+// 	cparams := []C.int{}
+
+// 	for _, v := range params {
+// 		cparams = append(cparams, C.int(v))
+// 	}
+
+// 	paramsVector := C.struct_IntVector{}
+// 	paramsVector.val = (*C.int)(&cparams[0])
+// 	paramsVector.length = (C.int)(len(cparams))
+
+// 	return bool(C.Image_IMWrite_WithParams(cName, img.p, paramsVector))
+// }
+
+// // FileExt represents a file extension.
+// type FileExt string
+
+// const (
+// 	// PNGFileExt is the file extension for PNG.
+// 	PNGFileExt FileExt = ".png"
+// 	// JPEGFileExt is the file extension for JPEG.
+// 	JPEGFileExt FileExt = ".jpg"
+// 	// GIFFileExt is the file extension for GIF.
+// 	GIFFileExt FileExt = ".gif"
+// )
+
+// // IMEncode encodes an image Mat into a memory buffer.
+// // This function compresses the image and stores it in the returned memory buffer,
+// // using the image format passed in in the form of a file extension string.
+// //
+// // For further details, please see:
+// // http://docs.opencv.org/master/d4/da8/group__imgcodecs.html#ga461f9ac09887e47797a54567df3b8b63
+// //
+// func IMEncode(fileExt FileExt, img Mat) (buf *NativeByteBuffer, err error) {
+// 	cfileExt := C.CString(string(fileExt))
+// 	defer C.free(unsafe.Pointer(cfileExt))
+
+// 	buffer := newNativeByteBuffer()
+// 	C.Image_IMEncode(cfileExt, img.Ptr(), buffer.nativePointer())
+// 	return buffer, nil
+// }
+
+// // IMEncodeWithParams encodes an image Mat into a memory buffer.
+// // This function compresses the image and stores it in the returned memory buffer,
+// // using the image format passed in in the form of a file extension string.
+// //
+// // Usage example:
+// //  buffer, err := gocv.IMEncodeWithParams(gocv.JPEGFileExt, img, []int{gocv.IMWriteJpegQuality, quality})
+// //
+// // For further details, please see:
+// // http://docs.opencv.org/master/d4/da8/group__imgcodecs.html#ga461f9ac09887e47797a54567df3b8b63
+// //
+// func IMEncodeWithParams(fileExt FileExt, img Mat, params []int) (buf *NativeByteBuffer, err error) {
+// 	cfileExt := C.CString(string(fileExt))
+// 	defer C.free(unsafe.Pointer(cfileExt))
+
+// 	cparams := []C.int{}
+
+// 	for _, v := range params {
+// 		cparams = append(cparams, C.int(v))
+// 	}
+
+// 	paramsVector := C.struct_IntVector{}
+// 	paramsVector.val = (*C.int)(&cparams[0])
+// 	paramsVector.length = (C.int)(len(cparams))
+
+// 	b := newNativeByteBuffer()
+// 	C.Image_IMEncode_WithParams(cfileExt, img.Ptr(), paramsVector, b.nativePointer())
+// 	return b, nil
+// }
+
+// // IMDecode reads an image from a buffer in memory.
+// // The function IMDecode reads an image from the specified buffer in memory.
+// // If the buffer is too short or contains invalid data, the function
+// // returns an empty matrix.
+// //
+// // For further details, please see:
+// // https://docs.opencv.org/master/d4/da8/group__imgcodecs.html#ga26a67788faa58ade337f8d28ba0eb19e
+// //
+// func IMDecode(buf []byte, flags IMReadFlag) (Mat, error) {
+// 	data, err := toByteArray(buf)
+// 	if err != nil {
+// 		return Mat{}, err
+// 	}
+// 	return newMat(C.Image_IMDecode(*data, C.int(flags))), nil
+// }

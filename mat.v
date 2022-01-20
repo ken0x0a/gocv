@@ -15,3 +15,7 @@ pub fn (mut m Mat) close() {
 	m.p = voidptr(0)
 	m.d.clear()
 }
+
+pub fn (mut m Mat) free() {
+	m.close()
+}

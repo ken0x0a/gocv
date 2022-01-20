@@ -34,17 +34,21 @@ fn C.Window_Close(&char)
 fn C.Window_IMShow(&char, &C.Mat)
 fn C.Window_WaitKey(int) int
 fn C.Window_SetProperty(&char, int, f64)
+
 // NewWindow creates a new named OpenCV window
 //
 // For further details, please see:
 // http://docs.opencv.org/master/d7/dfc/group__highgui.html#ga5afdf8410934fd099df85c75b2e0888b
 //
-pub fn new_window(name string) &Window {
+pub fn new_window(name string) Window {
 	// runtime.LockOSThread()
 
 	C.Window_New(unsafe { &char(name.str) }, 0)
 
-	return &Window{name: name, open: true}
+	return Window{
+		name: name
+		open: true
+	}
 }
 
 // Close closes and deletes a named OpenCV Window.
@@ -65,12 +69,12 @@ pub fn (w &Window) is_open() bool {
 }
 
 pub enum WindowPropertyFlags {
-  fullscreen = 0
-  autosize = 1
-  aspect_ratio = 2
-  opengl = 3
-  visible = 4
-  topmost = 5
+	fullscreen = 0
+	autosize = 1
+	aspect_ratio = 2
+	opengl = 3
+	visible = 4
+	topmost = 5
 	vsync = 6
 }
 
@@ -78,16 +82,12 @@ pub enum WindowPropertyFlags {
 pub enum WindowFlag {
 	// WindowNormal indicates a normal window.
 	normal = 0x00000000
-
 	// WindowAutosize indicates a window sized based on the contents.
 	autosize = 0x00000001
-
 	// // WindowFullscreen indicates a full-screen window.
 	// fullscreen = 1
-
 	// WindowFreeRatio indicates allow the user to resize without maintaining aspect ratio.
 	free_ratio = 0x00000100
-
 	// // WindowKeepRatio indicates always maintain an aspect ratio that matches the contents.
 	// keep_ratio = 0x00000000
 }
@@ -158,7 +158,7 @@ pub fn (w &Window) set_window_property(flag WindowPropertyFlags, value WindowFla
 // For further details, please see:
 // http://docs.opencv.org/master/d7/dfc/group__highgui.html#ga453d42fe4cb60e5723281a89973ee563
 //
-pub fn (w &Window) imshow(img Mat) {
+pub fn (w &Window) imshow(img &Mat) {
 	C.Window_IMShow(unsafe { &char(w.name.str) }, img.p)
 }
 

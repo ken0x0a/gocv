@@ -3,7 +3,31 @@ module cv
 #include "imgproc.h"
 
 fn C.FindContours(&C.Mat, &C.Mat, RetrievalMode, ContourApproximationMode) &C.PointsVector
+fn C.GaussianBlur(&C.Mat, mut &C.Mat, C.Size, f64, f64, int)
+fn C.Threshold(&C.Mat, mut &C.Mat, f64, f64, int) f64
+fn C.CvtColor(&C.Mat, mut &C.Mat, int)
+fn C.Dilate(&C.Mat, mut &C.Mat, &C.Mat)
+fn C.DilateWithParams(&C.Mat, mut &C.Mat, &C.Mat, &C.Point, int, BorderType, ...&C.Scalar)
+fn C.Canny(&C.Mat, mut &C.Mat, f64, f64)
+fn C.GetStructuringElement(int, C.Size) &C.Mat
+fn C.crop(src &C.Mat, top int, bottom int, left int, right int) &C.Mat
 
+pub fn (m Mat) crop(top int, bottom int, left int, right int) Mat {
+	return new_mat_from_c(C.crop(m.p, top, bottom, left, right))
+}
+
+struct C.Scalar{
+	val1 f64
+	val2 f64
+	val3 f64
+	val4 f64
+}
+struct RGBA {
+	r u8
+	g u8
+	b u8
+	a u8
+}
 /*
 #include <stdlib.h>
 #include "imgproc.h"
@@ -263,34 +287,37 @@ fn C.FindContours(&C.Mat, &C.Mat, RetrievalMode, ContourApproximationMode) &C.Po
 // 	C.SqBoxFilter(src.p, dst.p, C.int(depth), pSize)
 // }
 
-// // Dilate dilates an image by using a specific structuring element.
-// //
-// // For further details, please see:
-// // https://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#ga4ff0f3318642c4f469d0e11f242f3b6c
-// //
-// func Dilate(src Mat, dst *Mat, kernel Mat) {
-// 	C.Dilate(src.p, dst.p, kernel.p)
-// }
+// Dilate dilates an image by using a specific structuring element.
+//
+// For further details, please see:
+// https://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#ga4ff0f3318642c4f469d0e11f242f3b6c
+//
+pub fn dilate(src Mat, mut dst &Mat, kernel Mat) {
+	C.Dilate(src.p, mut dst.p, kernel.p)
+}
 
-// // DilateWithParams dilates an image by using a specific structuring element.
-// //
-// // For further details, please see:
-// // https://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#ga4ff0f3318642c4f469d0e11f242f3b6c
-// func DilateWithParams(src Mat, dst *Mat, kernel Mat, anchor image.Point, iterations, borderType BorderType, borderValue color.RGBA) {
-// 	cAnchor := C.struct_Point{
-// 		x: C.int(anchor.X),
-// 		y: C.int(anchor.Y),
-// 	}
+pub struct DilateOpts {
+	anchor ImagePoint = ImagePoint {-1, -1}
+	iterations int
+	border_type BorderType = .constant
+	border_value &C.Scalar = &C.Scalar(0)
+}
+// DilateWithParams dilates an image by using a specific structuring element.
+//
+// For further details, please see:
+// https://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#ga4ff0f3318642c4f469d0e11f242f3b6c
+pub fn dilate_with_params(src Mat, mut dst &Mat, kernel Mat, opts DilateOpts) {
+	c_anchor := C.Point{
+		x: opts.anchor.x,
+		y: opts.anchor.y,
+	}
 
-// 	bv := C.struct_Scalar{
-// 		val1: C.double(borderValue.B),
-// 		val2: C.double(borderValue.G),
-// 		val3: C.double(borderValue.R),
-// 		val4: C.double(borderValue.A),
-// 	}
-
-// 	C.DilateWithParams(src.p, dst.p, kernel.p, cAnchor, C.int(iterations), C.int(borderType), bv)
-// }
+	if isnil(opts.border_value) {
+		C.DilateWithParams(src.p, mut dst.p, kernel.p, c_anchor, opts.iterations, opts.border_type, opts.border_value)
+	} else {
+		C.DilateWithParams(src.p, mut dst.p, kernel.p, c_anchor, opts.iterations, opts.border_type, opts.border_value)
+	}
+}
 
 // // DistanceTransformLabelTypes are the types of the DistanceTransform algorithm flag
 // type DistanceTransformLabelTypes int
@@ -540,7 +567,7 @@ pub enum ContourApproximationMode {
 // For further details, please see:
 // https://docs.opencv.org/master/d3/dc0/group__imgproc__shape.html#ga95f5b48d01abc7c2e0732db24689837b
 //
-fn find_contours(src Mat, mode RetrievalMode, method ContourApproximationMode) PointsVector {
+pub fn find_contours(src Mat, mode RetrievalMode, method ContourApproximationMode) PointsVector {
 	mut hierarchy := new_mat()
 	defer { hierarchy.close() }
 	return find_contours_with_params(src, &hierarchy, mode, method)
@@ -551,7 +578,7 @@ fn find_contours(src Mat, mode RetrievalMode, method ContourApproximationMode) P
 // For further details, please see:
 // https://docs.opencv.org/master/d3/dc0/group__imgproc__shape.html#ga17ed9f5d79ae97bd4c7cf18403e1689a
 //
-fn find_contours_with_params(src Mat, hierarchy &Mat, mode RetrievalMode, method ContourApproximationMode) PointsVector {
+pub fn find_contours_with_params(src Mat, hierarchy &Mat, mode RetrievalMode, method ContourApproximationMode) PointsVector {
 	return PointsVector{p: C.FindContours(src.p, hierarchy.p, mode, method)}
 }
 
@@ -770,34 +797,32 @@ fn find_contours_with_params(src Mat, hierarchy &Mat, mode RetrievalMode, method
 // 	C.MorphologyExWithParams(src.p, dst.p, C.int(op), kernel.p, pt, C.int(iterations), C.int(borderType))
 // }
 
-// // MorphShape is the shape of the structuring element used for Morphing operations.
-// type MorphShape int
+// MorphShape is the shape of the structuring element used for Morphing operations.
+pub enum MorphShape {
+	// MorphRect is the rectangular morph shape.
+	rect= 0
 
-// const (
-// 	// MorphRect is the rectangular morph shape.
-// 	MorphRect MorphShape = 0
+	// MorphCross is the cross morph shape.
+	cross= 1
 
-// 	// MorphCross is the cross morph shape.
-// 	MorphCross MorphShape = 1
+	// MorphEllipse is the ellipse morph shape.
+	ellipse= 2
+}
 
-// 	// MorphEllipse is the ellipse morph shape.
-// 	MorphEllipse MorphShape = 2
-// )
+// GetStructuringElement returns a structuring element of the specified size
+// and shape for morphological operations.
+//
+// For further details, please see:
+// https://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#gac342a1bb6eabf6f55c803b09268e36dc
+//
+pub fn get_structuring_element(shape MorphShape, ksize Size) Mat {
+	sz := C.Size{
+		width:  ksize.width,
+		height: ksize.height,
+	}
 
-// // GetStructuringElement returns a structuring element of the specified size
-// // and shape for morphological operations.
-// //
-// // For further details, please see:
-// // https://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#gac342a1bb6eabf6f55c803b09268e36dc
-// //
-// func GetStructuringElement(shape MorphShape, ksize image.Point) Mat {
-// 	sz := C.struct_Size{
-// 		width:  C.int(ksize.X),
-// 		height: C.int(ksize.Y),
-// 	}
-
-// 	return newMat(C.GetStructuringElement(C.int(shape), sz))
-// }
+	return new_mat_from_c(C.GetStructuringElement(int(shape), sz))
+}
 
 // // MorphType type of morphological operation.
 // type MorphType int
@@ -828,51 +853,48 @@ fn find_contours_with_params(src Mat, hierarchy &Mat, mode RetrievalMode, method
 // 	MorphHitmiss MorphType = 7
 // )
 
-// // BorderType type of border.
-// type BorderType int
+// BorderType type of border.
+pub enum BorderType {
+	// BorderConstant border type
+	constant = 0
 
-// const (
-// 	// BorderConstant border type
-// 	BorderConstant BorderType = 0
+	// BorderReplicate border type
+	replicate = 1
 
-// 	// BorderReplicate border type
-// 	BorderReplicate BorderType = 1
+	// BorderReflect border type
+	reflect = 2
 
-// 	// BorderReflect border type
-// 	BorderReflect BorderType = 2
+	// BorderWrap border type
+	wrap = 3
 
-// 	// BorderWrap border type
-// 	BorderWrap BorderType = 3
+	// BorderReflect101 border type
+	reflect101 = 4
 
-// 	// BorderReflect101 border type
-// 	BorderReflect101 BorderType = 4
+	// BorderTransparent border type
+	transparent = 5
 
-// 	// BorderTransparent border type
-// 	BorderTransparent BorderType = 5
+	// BorderDefault border type
+	// default = BorderReflect101
 
-// 	// BorderDefault border type
-// 	BorderDefault = BorderReflect101
+	// BorderIsolated border type
+	isolated = 16
+}
 
-// 	// BorderIsolated border type
-// 	BorderIsolated BorderType = 16
-// )
+// GaussianBlur blurs an image Mat using a Gaussian filter.
+// The function convolves the src Mat image into the dst Mat using
+// the specified Gaussian kernel params.
+//
+// For further details, please see:
+// http://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#gaabe8c836e97159a9193fb0b11ac52cf1
+//
+pub fn gaussian_blur(src Mat, mut dst Mat, ksize Size, sigma_x f64, sigma_y f64, borderType BorderType) {
+	p_size := C.Size {
+		width:  ksize.width
+		height: ksize.height
+	}
 
-// // GaussianBlur blurs an image Mat using a Gaussian filter.
-// // The function convolves the src Mat image into the dst Mat using
-// // the specified Gaussian kernel params.
-// //
-// // For further details, please see:
-// // http://docs.opencv.org/master/d4/d86/group__imgproc__filter.html#gaabe8c836e97159a9193fb0b11ac52cf1
-// //
-// func GaussianBlur(src Mat, dst *Mat, ksize image.Point, sigmaX float64,
-// 	sigmaY float64, borderType BorderType) {
-// 	pSize := C.struct_Size{
-// 		width:  C.int(ksize.X),
-// 		height: C.int(ksize.Y),
-// 	}
-
-// 	C.GaussianBlur(src.p, dst.p, pSize, C.double(sigmaX), C.double(sigmaY), C.int(borderType))
-// }
+	C.GaussianBlur(src.p, mut dst.p, p_size, sigma_x, sigma_y, int(borderType))
+}
 
 // // GetGaussianKernel returns Gaussian filter coefficients.
 // //
@@ -937,20 +959,20 @@ fn find_contours_with_params(src Mat, hierarchy &Mat, mode RetrievalMode, method
 // 	C.MedianBlur(src.p, dst.p, C.int(ksize))
 // }
 
-// // Canny finds edges in an image using the Canny algorithm.
-// // The function finds edges in the input image image and marks
-// // them in the output map edges using the Canny algorithm.
-// // The smallest value between threshold1 and threshold2 is used
-// // for edge linking. The largest value is used to
-// // find initial segments of strong edges.
-// // See http://en.wikipedia.org/wiki/Canny_edge_detector
-// //
-// // For further details, please see:
-// // http://docs.opencv.org/master/dd/d1a/group__imgproc__feature.html#ga04723e007ed888ddf11d9ba04e2232de
-// //
-// func Canny(src Mat, edges *Mat, t1 float32, t2 float32) {
-// 	C.Canny(src.p, edges.p, C.double(t1), C.double(t2))
-// }
+// Canny finds edges in an image using the Canny algorithm.
+// The function finds edges in the input image image and marks
+// them in the output map edges using the Canny algorithm.
+// The smallest value between threshold1 and threshold2 is used
+// for edge linking. The largest value is used to
+// find initial segments of strong edges.
+// See http://en.wikipedia.org/wiki/Canny_edge_detector
+//
+// For further details, please see:
+// http://docs.opencv.org/master/dd/d1a/group__imgproc__feature.html#ga04723e007ed888ddf11d9ba04e2232de
+//
+pub fn canny(src Mat, mut edges &Mat, t1 f64, t2 f64) {
+	C.Canny(src.p, mut edges.p, t1, t2)
+}
 
 // // CornerSubPix Refines the corner locations. The function iterates to find
 // // the sub-pixel accurate location of corners or radial saddle points.
@@ -1105,43 +1127,42 @@ fn find_contours_with_params(src Mat, hierarchy &Mat, mode RetrievalMode, method
 // 	C.Integral(src.p, sum.p, sqsum.p, tilted.p)
 // }
 
-// // ThresholdType type of threshold operation.
-// type ThresholdType int
+// ThresholdType type of threshold operation.
+// [flag]
+pub enum ThresholdType {
+	// ThresholdBinary threshold type
+	binary = 0
 
-// const (
-// 	// ThresholdBinary threshold type
-// 	ThresholdBinary ThresholdType = 0
+	// ThresholdBinaryInv threshold type
+	binary_inv = 1
 
-// 	// ThresholdBinaryInv threshold type
-// 	ThresholdBinaryInv ThresholdType = 1
+	// ThresholdTrunc threshold type
+	trunc = 2
 
-// 	// ThresholdTrunc threshold type
-// 	ThresholdTrunc ThresholdType = 2
+	// ThresholdToZero threshold type
+	to_zero = 3
 
-// 	// ThresholdToZero threshold type
-// 	ThresholdToZero ThresholdType = 3
+	// ThresholdToZeroInv threshold type
+	to_zero_inv = 4
 
-// 	// ThresholdToZeroInv threshold type
-// 	ThresholdToZeroInv ThresholdType = 4
+	// ThresholdMask threshold type
+	mask = 7
 
-// 	// ThresholdMask threshold type
-// 	ThresholdMask ThresholdType = 7
+	// ThresholdOtsu threshold type
+	otsu = 8
 
-// 	// ThresholdOtsu threshold type
-// 	ThresholdOtsu ThresholdType = 8
+	// ThresholdTriangle threshold type
+	triangle = 16
+}
 
-// 	// ThresholdTriangle threshold type
-// 	ThresholdTriangle ThresholdType = 16
-// )
-
-// // Threshold applies a fixed-level threshold to each array element.
-// //
-// // For further details, please see:
-// // https://docs.opencv.org/3.3.0/d7/d1b/group__imgproc__misc.html#gae8a4a146d1ca78c626a53577199e9c57
-// //
-// func Threshold(src Mat, dst *Mat, thresh float32, maxvalue float32, typ ThresholdType) (threshold float32) {
-// 	return float32(C.Threshold(src.p, dst.p, C.double(thresh), C.double(maxvalue), C.int(typ)))
-// }
+// Threshold applies a fixed-level threshold to each array element.
+//
+// For further details, please see:
+// https://docs.opencv.org/3.3.0/d7/d1b/group__imgproc__misc.html#gae8a4a146d1ca78c626a53577199e9c57
+//
+pub fn threshold(src Mat, mut dst &Mat, thresh f64, maxvalue f64, typ ThresholdType) f64 {
+	return C.Threshold(src.p, mut dst.p, thresh, maxvalue, int(typ))
+}
 
 // // AdaptiveThresholdType type of adaptive threshold operation.
 // type AdaptiveThresholdType int
@@ -2193,3 +2214,16 @@ fn find_contours_with_params(src Mat, hierarchy &Mat, mode RetrievalMode, method
 // func AccumulatedWeightedWithMask(src Mat, dst *Mat, alpha float64, mask Mat) {
 // 	C.Mat_AccumulatedWeightedWithMask(src.p, dst.p, C.double(alpha), mask.p)
 // }
+
+
+
+// CvtColor converts an image from one color space to another.
+// It converts the src Mat image to the dst Mat using the
+// code param containing the desired ColorConversionCode color space.
+//
+// For further details, please see:
+// http://docs.opencv.org/master/d7/d1b/group__imgproc__misc.html#ga4e0972be5de079fed4e3a10e24ef5ef0
+//
+pub fn cvt_color(src Mat, mut dst &Mat, code ColorConversionCode) {
+	C.CvtColor(src.p, mut dst.p, int(code))
+}
