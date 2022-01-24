@@ -1566,7 +1566,7 @@ pub fn threshold(src Mat, mut dst &Mat, thresh f64, maxvalue f64, typ ThresholdT
 
 // InterpolationFlags are bit flags that control the interpolation algorithm
 // that is used.
-enum InterpolationFlags {
+pub enum InterpolationFlags {
 	// InterpolationNearestNeighbor is nearest neighbor. (fast but low quality)
 	nearest_neighbor = 0
 
@@ -1599,7 +1599,7 @@ enum InterpolationFlags {
 //
 // For further details, please see:
 // https://docs.opencv.org/master/da/d54/group__imgproc__transform.html#ga47a974309e9102f5f08231edc7e7529d
-fn resize(src Mat, mut dst &Mat, sz ImagePoint, fx, fy f64, interp InterpolationFlags) {
+pub fn resize(src Mat, mut dst &Mat, sz ImagePoint, fx f64, fy f64, interp InterpolationFlags) {
 	p_size := C.Size{
 		width:  sz.x,
 		height: sz.y,
